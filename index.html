@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>誠信檢驗站</title>
     
-    <!-- 標準化：連結外部圖示與 Manifest 檔案 -->
-    <link rel="icon" type="image/svg+xml" href="icon.svg">
-    <link rel="apple-touch-icon" href="icon.svg">
-    <link rel="manifest" href="manifest.json">
+    <!-- 預留給程式動態生成的圖示與 APP 安裝檔 -->
+    <link rel="icon" id="favicon" href="">
+    <link rel="apple-touch-icon" id="apple-icon" href="">
+    <link rel="manifest" id="manifest-link">
 
     <style>
         body {
@@ -280,7 +280,7 @@
         <div class="score-board">
             <div style="font-size: 24px; color: #555; margin-bottom: 10px;">本次總積分</div>
             <div style="font-size: 70px; color: #118AB2; font-weight: 900; line-height: 1;" id="final-score">0</div>
-            <!-- 新增滿分顯示區塊 -->
+            <!-- 顯示滿分區塊 -->
             <div style="font-size: 22px; color: #888; margin-top: 15px; font-weight: bold;">
                 ( 本局最高滿分：<span id="max-score">0</span> )
             </div>
@@ -291,6 +291,43 @@
 </div>
 
 <script>
+    // === 動態生成圖示與 APP 設定 (無雷射光束的高科技版本) ===
+    const customIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+        <defs>
+            <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#118AB2"/>
+                <stop offset="100%" stop-color="#1B1C2A"/>
+            </linearGradient>
+            <linearGradient id="glassGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/>
+                <stop offset="100%" stop-color="#e0e0e0" stop-opacity="0.2"/>
+            </linearGradient>
+            <filter id="dropShadow">
+                <feDropShadow dx="0" dy="15" stdDeviation="20" flood-color="#000" flood-opacity="0.5"/>
+            </filter>
+        </defs>
+        <rect width="512" height="512" rx="115" fill="url(#bgGrad)"/>
+        <path d="M 0 100 L 512 100 M 0 200 L 512 200 M 0 300 L 512 300 M 0 400 L 512 400 M 100 0 L 100 512 M 200 0 L 200 512 M 300 0 L 300 512 M 400 0 L 400 512" stroke="rgba(255,255,255,0.06)" stroke-width="4"/>
+        <path d="M 340 340 L 460 460" stroke="#FFD166" stroke-width="50" stroke-linecap="round" filter="url(#dropShadow)"/>
+        <path d="M 375 375 L 425 425" stroke="#E76F51" stroke-width="16" stroke-linecap="round"/>
+        <circle cx="220" cy="220" r="145" fill="url(#glassGrad)" filter="url(#dropShadow)"/>
+        <circle cx="220" cy="220" r="145" fill="none" stroke="#ffffff" stroke-width="24"/>
+        <path d="M 130 230 L 190 290 L 310 150" fill="none" stroke="#06D6A0" stroke-width="45" stroke-linecap="round" stroke-linejoin="round" filter="url(#dropShadow)"/>
+        <path d="M 80 100 Q 100 100 100 80 Q 100 100 120 100 Q 100 100 100 120 Q 100 100 80 100 Z" fill="#FFD166" filter="url(#dropShadow)"/>
+        <path d="M 380 120 Q 395 120 395 105 Q 395 120 410 120 Q 395 120 395 135 Q 395 120 380 120 Z" fill="#06D6A0" filter="url(#dropShadow)"/>
+    </svg>`;
+    const iconUrl = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(customIconSVG);
+    document.getElementById('apple-icon').href = iconUrl;
+    document.getElementById('favicon').href = iconUrl;
+    
+    const manifest = {
+        "name": "誠信檢驗站", "short_name": "誠信檢驗", "start_url": ".", 
+        "display": "standalone", "background_color": "#ffffff", "theme_color": "#118AB2", 
+        "icons": [{"src": iconUrl, "sizes": "512x512", "type": "image/svg+xml"}]
+    };
+    const blob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
+    document.getElementById('manifest-link').href = URL.createObjectURL(blob);
+
     // === 音效系統 ===
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     let audioCtx;
@@ -489,27 +526,29 @@
         const endMessage = document.getElementById('end-message');
 
         let ratio = maxPossibleScore > 0 ? score / maxPossibleScore : 0;
+        let accuracyPercent = Math.round(ratio * 100);
 
-        if (ratio === 1 && score > 0) {
-            endTitle.innerText = "👑 完美食安包公 👑"; 
+        // 綜合評估：手速(總分) 與 準度(比例) 取得平衡
+        if (ratio >= 0.9 && score >= 150) {
+            endTitle.innerText = "👑 傳奇食安包公 👑"; 
             endTitle.style.color = "#FFD166";
             endTitle.style.textShadow = "0 0 20px rgba(255, 209, 102, 0.8)"; 
-            endMessage.innerText = "滿分神人！你展現了無懈可擊的專業倫理與火眼金睛，一絲漏洞都逃不過你的法眼！";
-        } else if (ratio >= 0.8) {
+            endMessage.innerText = `準確率 ${accuracyPercent}%！神乎其技的手速與完美的判斷力，你是食安界的傳奇！`;
+        } else if (ratio >= 0.8 && score >= 80) {
             endTitle.innerText = "🌟 廉能食安守護神"; 
             endTitle.style.color = "#E76F51";
             endTitle.style.textShadow = "none";
-            endMessage.innerText = "太優秀了！你成功拒絕了誘惑，並高標準把關了食安！";
-        } else if (ratio >= 0.4) {
+            endMessage.innerText = `準確率 ${accuracyPercent}%！手速與準度兼具，成功拒絕誘惑，高標準把關食安！`;
+        } else if (ratio >= 0.5 && score > 0) {
             endTitle.innerText = "👍 稱職的稽查員"; 
             endTitle.style.color = "#118AB2";
             endTitle.style.textShadow = "none";
-            endMessage.innerText = "表現不錯！繼續保持專業倫理與敏銳度！";
+            endMessage.innerText = `準確率 ${accuracyPercent}%！表現穩健！若能再加快一點檢驗速度就更完美了！`;
         } else {
             endTitle.innerText = "🚨 倫理與食安危機"; 
             endTitle.style.color = "#EF476F";
             endTitle.style.textShadow = "none";
-            endMessage.innerText = "哎呀！不小心放水或是誤判了嗎？請再挑戰一次熟悉法規！";
+            endMessage.innerText = `準確率 ${accuracyPercent}%！哎呀！不小心放水或是誤判太多囉，再挑戰一次吧！`;
         }
     }
 </script>
